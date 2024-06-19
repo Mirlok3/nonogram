@@ -1,0 +1,58 @@
+/* makes sizing simpler */
+.roboto-regular {
+    font-family: "Roboto";
+    font-weight: 400;
+    font-style: normal;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* remove default spacing */
+/* force styling of type through styling, rather than elements */
+* {
+    margin: 0;
+    padding: 0;
+}
+
+/* dark mode user-agent-styles */
+html {
+    color-scheme: dark light;
+}
+
+/* min body height */
+body {
+    min-height: 100vh;
+}
+
+/* responsive images/videos */
+img,
+picture,
+svg,
+video {
+    display: block;
+    max-width: 100%;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+/* table */
+table {
+    margin: auto;
+    border: 3px solid green;
+    padding: 10px;
+    border-collapse: collapse;
+}
+
+td {
+    text-align: center;
+    border: 1px solid;
+    width: 60px;
+    height: 60px;
+}
