@@ -42,23 +42,56 @@ h1 {
 /* table */
 table {
     margin: auto;
-    border: 3px solid green;
+    border: 3px solid slategray;
     padding: 10px;
     border-collapse: collapse;
 }
 
 td {
+    background-color: lightgray;
     text-align: center;
-    border: 3px solid white;
+    font-weight: bold;
+    /* No borders if not highlighted/marked, seems to be easier on eyes*/
+    border: 2px solid lightgray;
+    /* border: 2px solid white; */
+    /* TODO: responsive based on width and height */
     width: 60px;
     height: 60px;
-    background-color: lightgray;
+}
+
+.mapCellRows {
+    background-color: #6e7a73;
+    text-align: left;
+    padding-left: 5px;
+}
+
+.mapCellCols {
+    background-color: #6e7a73;
+    vertical-align: text-top;
+    padding-top: 5px;
+}
+
+.indexCell {
+    background-color: #6e7a73;
+    text-align: right;
+    padding-right: 5px;
+}
+
+.indexCellCol {
+    background-color: #6e7a73;
+    vertical-align: bottom;
+    padding-right: 5px;
 }
 
 .highlight {
-    filter: brightness(75%);
+    filter: contrast(65%);
 }
 
-/* td:hover { */
-/*     filter: brightness(75%); */
-/* } */
+.section {
+    border: 3px solid #f8a100;
+    /* Thicker border */
+}
+
+td:hover {
+    box-shadow: inset 0 0 20px #f8a100;
+}

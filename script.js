@@ -1,7 +1,8 @@
-// Prevent right click for right click function
-document.addEventListener('contextmenu', event => event.preventDefault());
-const width = 10;
-const height = 10;
+const width = 20;
+const height = 20;
+let leftMouseDown = false;
+let rightMouseDown = false;
+let middleMouseDown = false;
 
 // Cell class
 class Cell {
@@ -21,38 +22,71 @@ class Table {
     }
 
     renderTable(height, width) {
+        this.renderColIndexMap();
+
         for (let i = 0; i < height; i++) {
             const row = this.table.insertRow();
+
+            // Add index cells
+            const indexCell = row.insertCell();
+            indexCell.innerHTML = i + 1;
+            indexCell.className = "indexCell";
 
             for (let j = 0; j < width; j++) {
                 const rand = Math.random() > 0.5;
                 const cell = new Cell(rand, row); // Create cell
                 this.cells.push(cell); // Add cell to table
 
-                // Add onclick func for evaluating cell to attribute
-                // Add on left click func for marking cell
-                cell.tableCell.addEventListener('click', () => this.cellClick(cell));
-                cell.tableCell.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    this.rightClick(cell);
+                // EVENT LISTENERS FOR CELL
+                // Single cell click mark
+                cell.tableCell.addEventListener('mousedown', (e) => {
+                    leftMouseDown = e.button === 0;
+                    rightMouseDown = e.button === 2;
+                    middleMouseDown = e.button === 1;
+
+                    e.preventDefault(); // prevent text selection
+
+                    if (leftMouseDown) {
+                        this.cellClick(cell);
+                    } else if (rightMouseDown) {
+                        this.rightClick(cell);
+                    } else if (middleMouseDown) {
+                        this.markCell(cell);
+                    }
                 });
 
-                // Add hover event listeners for row and col highlighting
+                // Drag marking
+                cell.tableCell.addEventListener('mouseover', () => {
+                    if (leftMouseDown) {
+                        this.cellClick(cell);
+                    } else if (rightMouseDown) {
+                        this.rightClick(cell);
+                    }
+                });
+
+                // row and col highlighting
                 cell.tableCell.addEventListener('mouseover', () => this.highlightCell(cell.tableCell));
                 cell.tableCell.addEventListener('mouseout', () => this.clearHighlights(cell.tableCell));
 
+                // prevent context menu
+                cell.tableCell.addEventListener('contextmenu', (e) => e.preventDefault());
                 //cell.tableCell.innerText = cell.getColor();  // Cheat
 
-                // Add row maps
+                // Map current row
                 if (j === width - 1) {
                     const mapCell = row.insertCell()
-                    mapCell.style.backgroundColor = "gray"; // set background
+                    mapCell.className = "mapCellRows";
                     mapCell.innerHTML = this.mapRow(i, j)
                 }
             }
         }
 
+        this.renderColMap();
         document.getElementById('myCanvas').appendChild(this.table);
+        document.addEventListener('mouseup', () => {
+            leftMouseDown = false;
+            rightMouseDown = false;
+        });
     }
 
     mapRow(x) {
@@ -102,7 +136,6 @@ class Table {
             }
         }
 
-        console.log("rows:", rows);
         return rows;
     }
 
@@ -131,43 +164,59 @@ class Table {
             col = [];
         }
 
-        console.log("cols:", cols);
         return cols;
+    }
+
+    renderColMap() {
+        const row = this.table.insertRow();
+        row.insertCell();
+
+        const cols = this.mapCols();
+        for (let i = 0; i < cols.length; i++) {
+            const cell = row.insertCell()
+            cell.innerHTML = cols[i].join('<br>'); // Separate array nums with <br>
+            cell.className = "mapCellCols";
+        }
+
+        row.insertCell();
     }
 
     cellClick(cell) {
         if (cell.marked) return;
-
-        const cellIndex = this.cells.indexOf(cell);
-        const row = Math.floor(cellIndex / width);
-        this.highlightRow(row);
-        this.highlightColumn(cellIndex % width);
+        cell.marked = true;
 
         // If colored cell, color blue, if not color gray and add X
         if (!cell.getColor()) {
             cell.tableCell.style.backgroundColor = "gray";
             cell.tableCell.innerHTML = "X";
         } else {
-            cell.marked = true;
             cell.tableCell.style.backgroundColor = "dodgerblue";
         }
     }
 
+    // TODO: drag click in only one direction
+
     rightClick(cell) {
         if (cell.marked) return;
-
-        const cellIndex = this.cells.indexOf(cell);
-        const row = Math.floor(cellIndex / width);
-        this.highlightRow(row);
-        this.highlightColumn(cellIndex % width);
+        cell.marked = true;
 
         // If colored cell, color gray, if not color blue and add X
         if (cell.getColor()) {
             cell.tableCell.style.backgroundColor = "dodgerblue";
             cell.tableCell.innerHTML = "X";
         } else {
-            cell.marked = true;
             cell.tableCell.style.backgroundColor = "gray";
+        }
+
+    }
+
+    markCell(cell) {
+        if (cell.marked) return;
+
+        if (cell.tableCell.style.backgroundColor === "red") {
+            cell.tableCell.style.backgroundColor = "";
+        } else {
+            cell.tableCell.style.backgroundColor = "red";
         }
     }
 
@@ -198,10 +247,21 @@ class Table {
         const cells = document.querySelectorAll('td');
         cells.forEach(cell => cell.classList.remove('highlight'));
     }
+
+    renderColIndexMap() {
+        const row = this.table.insertRow();
+        row.insertCell();
+        for (let i = 0; i < width; i++) {
+            const cell = row.insertCell();
+            cell.innerHTML = i + 1;
+            cell.className = "indexCellCol";
+        }
+        row.insertCell();
+    }
 }
 
 let picross = new Table()
 picross.renderTable(height, width);
-picross.mapRows();
-picross.mapCols();
+// picross.mapRows();
+// picross.mapCols();
 
