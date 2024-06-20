@@ -1,7 +1,7 @@
 // Prevent right click for right click function
 document.addEventListener('contextmenu', event => event.preventDefault());
-width = 10;
-height = 10;
+const width = 10;
+const height = 10;
 
 // Cell class
 class Cell {
@@ -16,49 +16,54 @@ class Cell {
 
 class Table {
     constructor() {
-        this.cell = [];
+        this.cells = [];
         this.table = document.createElement('table');
-        this.count = 1;
     }
 
     renderTable(height, width) {
         for (let i = 0; i < height; i++) {
-            let row = picross.table.insertRow();
+            const row = this.table.insertRow();
 
             for (let j = 0; j < width; j++) {
-                let rand = Math.random() > 0.5;
-                let cell = new Cell(rand, row); // Create cell
-                picross.cell[picross.count] = cell; // Add cell to table
+                const rand = Math.random() > 0.5;
+                const cell = new Cell(rand, row); // Create cell
+                this.cells.push(cell); // Add cell to table
 
                 // Add onclick func for evaluating cell to attribute
-                cell.tableCell.setAttribute("onclick", `cellClick(${picross.count})`);
                 // Add on left click func for marking cell
-                cell.tableCell.setAttribute("oncontextmenu", `rightClick(${picross.count})`);
+                cell.tableCell.addEventListener('click', () => this.cellClick(cell));
+                cell.tableCell.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    this.rightClick(cell);
+                });
+
+                // Add hover event listeners for row and col highlighting
+                cell.tableCell.addEventListener('mouseover', () => this.highlightCell(cell.tableCell));
+                cell.tableCell.addEventListener('mouseout', () => this.clearHighlights(cell.tableCell));
 
                 //cell.tableCell.innerText = cell.getColor();  // Cheat
 
                 // Add row maps
-                if (j == width - 1) {
-                    let mapCell = row.insertCell()
+                if (j === width - 1) {
+                    const mapCell = row.insertCell()
                     mapCell.style.backgroundColor = "gray"; // set background
                     mapCell.innerHTML = this.mapRow(i, j)
                 }
-
-                picross.count++;
             }
         }
 
-        document.getElementById('myCanvas').appendChild(picross.table);
+        document.getElementById('myCanvas').appendChild(this.table);
     }
 
     mapRow(x) {
         let counter = 0, group = 0;
-        let row = [];
+        const row = [];
 
-        for (let i = width; i > 0; i--) {
+        for (let i = width - 1; i >= 0; i--) {
+            const cell = this.cells[(x * width) + i]; // current cell
             // Count marked cells,
             // when an unmarked is reached, add count to array
-            if (picross.cell[(x * width) + i].getColor()) counter++;
+            if (cell && cell.getColor()) counter++;
             else if (counter !== 0) {
                 row[group] = counter;
                 group++;
@@ -73,12 +78,13 @@ class Table {
     // console.log(i + "." + picross.cell[i].getColor() + "." + j + "," + counter + '|' + x)
     mapRows() {
         let rowNum = 0, counter = 0, group = 0;
-        let rows = [], row = [];
+        const rows = [];
+        let row = [];
 
         // Go through Table()
-        for (let i = 1; i < this.count; i++) {
+        for (let i = 0; i < this.cells.length; i++) {
             // Count marked cells, when a unmarked is reached, add to array
-            if (picross.cell[i].getColor()) counter++;
+            if (this.cells[i].getColor()) counter++;
             else if (counter !== 0) {
                 row[group] = counter;
                 group++;
@@ -86,7 +92,7 @@ class Table {
             }
 
             // Add to array, start new row and reset
-            if (i % width == 0 && i != 0) {
+            if ((i + 1) % width === 0 && i !== 0) {
                 if (counter !== 0) row[group] = counter; // avoid adding 0
                 rows[rowNum] = row;
                 rowNum++;
@@ -96,41 +102,102 @@ class Table {
             }
         }
 
-        console.log("rows:");
-        console.log(rows);
+        console.log("rows:", rows);
         return rows;
     }
 
     mapCols() {
         let colNum = 0, counter = 0, group = 0;
-        let cols = [], col = [];
+        const cols = [];
+        let col = [];
 
-        // Go through table horizontaly by adding the width
-        for (let i = 1; i < this.count; i += width) {
-            // Count marked cells, when a unmarked is reached, add to array
-            if (picross.cell[i].getColor()) counter++;
-            else if (counter !== 0) {
-                col[group] = counter;
-                group++;
-                counter = 0;
+        for (let i = 0; i < width; i++) {
+            for (let j = i; j < this.cells.length; j += width) {
+                // Count marked cells, when a unmarked is reached, add to array
+                if (this.cells[j].getColor()) counter++;
+                else if (counter !== 0) {
+                    col[group] = counter;
+                    group++;
+                    counter = 0;
+                }
             }
 
-            // Add to array, start new row and reset
-            if (i + width >= this.count && colNum <= width - 1) {
-                if (counter !== 0) col[group] = counter;
-                cols[colNum] = col;
-                colNum++;
+            // Add to array
+            if (counter !== 0) col[group] = counter;
+            cols[colNum] = col;
+            colNum++;
 
-                i = colNum - width + 1; // Reset i by one for new col
-                counter = group = 0;
-                col = [];
-            }
+            counter = group = 0;
+            col = [];
         }
 
-        console.log("cols:");
-        console.log(cols);
+        console.log("cols:", cols);
+        return cols;
     }
 
+    cellClick(cell) {
+        if (cell.marked) return;
+
+        const cellIndex = this.cells.indexOf(cell);
+        const row = Math.floor(cellIndex / width);
+        this.highlightRow(row);
+        this.highlightColumn(cellIndex % width);
+
+        // If colored cell, color blue, if not color gray and add X
+        if (!cell.getColor()) {
+            cell.tableCell.style.backgroundColor = "gray";
+            cell.tableCell.innerHTML = "X";
+        } else {
+            cell.marked = true;
+            cell.tableCell.style.backgroundColor = "dodgerblue";
+        }
+    }
+
+    rightClick(cell) {
+        if (cell.marked) return;
+
+        const cellIndex = this.cells.indexOf(cell);
+        const row = Math.floor(cellIndex / width);
+        this.highlightRow(row);
+        this.highlightColumn(cellIndex % width);
+
+        // If colored cell, color gray, if not color blue and add X
+        if (cell.getColor()) {
+            cell.tableCell.style.backgroundColor = "dodgerblue";
+            cell.tableCell.innerHTML = "X";
+        } else {
+            cell.marked = true;
+            cell.tableCell.style.backgroundColor = "gray";
+        }
+    }
+
+    highlightColumn(index) {
+        for (let i = index; i < this.cells.length; i += width) {
+            this.cells[i].tableCell.classList.add('highlight');
+        }
+    }
+
+    highlightRow(row) {
+        const rowStartIndex = row * width;
+        const rowEndIndex = rowStartIndex + width;
+        for (let i = rowStartIndex; i < rowEndIndex; i++) {
+            this.cells[i].tableCell.classList.add('highlight');
+        }
+    }
+
+
+    highlightCell(cell) {
+        this.clearHighlights();
+        const cellIndex = this.cells.findIndex(c => c.tableCell === cell);
+        const row = Math.floor(cellIndex / width);
+        this.highlightRow(row);
+        this.highlightColumn(cellIndex % width);
+    }
+
+    clearHighlights() {
+        const cells = document.querySelectorAll('td');
+        cells.forEach(cell => cell.classList.remove('highlight'));
+    }
 }
 
 let picross = new Table()
@@ -138,34 +205,3 @@ picross.renderTable(height, width);
 picross.mapRows();
 picross.mapCols();
 
-function cellClick(count) {
-    if (picross.cell[count].marked) return
-
-    // If colored cell, color blue, if not color gray and add X
-    if (!picross.cell[count].getColor()) {
-        picross.cell[count].tableCell.style.backgroundColor = "gray";
-        picross.cell[count].tableCell.innerHTML = "X";
-    } else {
-        picross.cell[count].marked = true;
-        picross.cell[count].tableCell.style.backgroundColor = "dodgerblue";
-    }
-}
-
-function rightClick(count) {
-    if (picross.cell[count].marked) return
-
-    // If colored cell, color gray, if not color blue and add X
-    if (picross.cell[count].getColor()) {
-        picross.cell[count].tableCell.style.backgroundColor = "dodgerblue";
-        picross.cell[count].tableCell.innerHTML = "X";
-    } else {
-        picross.cell[count].marked = true;
-        picross.cell[count].tableCell.style.backgroundColor = "gray";
-    }
-}
-
-// // Ensure the script runs after the DOM is fully loaded
-// document.addEventListener("DOMContentLoaded", function() {
-//     // Attach event listener to the button
-//     document.getElementById("evaluateButton").addEventListener("click", evaluate);
-// });

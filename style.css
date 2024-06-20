@@ -54,3 +54,11 @@ td {
     height: 60px;
     background-color: lightgray;
 }
+
+.highlight {
+    filter: brightness(75%);
+}
+
+/* td:hover { */
+/*     filter: brightness(75%); */
+/* } */
